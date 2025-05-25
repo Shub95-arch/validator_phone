@@ -38,7 +38,7 @@ async def fetch(session, batch):
     }
     payload = {
         "inputNum": batch,
-        "license": config_values.get('license')  # Replace with your real license
+        "license": config_values.get('license')  
     }
 
     async with session.post(url, json=payload, headers=headers) as resp:
@@ -54,7 +54,7 @@ async def bound_fetch(sem, session, batch):
             results = await fetch(session, batch)
             if not results:
                 print(f"⚠️ No results for batch: {batch}")
-            await asyncio.sleep(random.uniform(1, 2))  # random delay
+            await asyncio.sleep(random.uniform(1, 2)) 
             return results or []
         except Exception as e:
             print(f"❌ Error on batch {batch}: Reprocessing")
@@ -100,7 +100,7 @@ async def main():
 
     df = pd.read_excel(input_file)
     numbers = df.iloc[:, 0].dropna().astype(str).tolist()
-    numbers = list(dict.fromkeys(numbers))  # Remove duplicates
+    numbers = list(dict.fromkeys(numbers)) 
 
     batches = [numbers[i:i + batch_size] for i in range(0, len(numbers), batch_size)]
     sem = asyncio.Semaphore(concurrency)
@@ -109,7 +109,7 @@ async def main():
         current_batches = batches
         all_results = []
 
-        # Retry failed batches
+        
         for attempt in range(1, retries + 1):
             print(f"\n🔁 Attempt {attempt} for {len(current_batches)} batches")
             tasks = [bound_fetch(sem, session, batch) for batch in current_batches]
@@ -128,7 +128,7 @@ async def main():
                 print(f"⚠️ {len(failed_batches)} batches failed, retrying...")
                 current_batches = failed_batches
 
-        # Split complete vs incomplete results
+       
         incomplete = [r for r in all_results if not r.get("telnyxData") or not r["telnyxData"].get("data")]
         complete = [r for r in all_results if r.get("telnyxData") and r["telnyxData"].get("data")]
 
@@ -139,7 +139,7 @@ async def main():
             retry_tasks = [bound_fetch(asyncio.Semaphore(1), session, batch) for batch in retry_batches]
             retry_results = await asyncio.gather(*retry_tasks)
 
-            # Merge results
+           
             retried_flat = [item for sub in retry_results for item in sub if item]
             all_results = complete + retried_flat
         else:
